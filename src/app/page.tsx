@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function Home() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-      <div className="text-6xl mb-6">⚓</div>
+      <div className="text-6xl mb-6">☕</div>
       <h1 className="text-4xl font-bold mb-4 tracking-tight">
         Find your kind.
       </h1>
