@@ -23,7 +23,7 @@ test.describe('/agent page — human section', () => {
 test.describe('/agent page — agent section', () => {
   test('shows registration step with verify/start', async ({ page }) => {
     await page.goto('/agent');
-    await expect(page.locator('text=Register')).toBeVisible();
+    await expect(page.locator('h3', { hasText: 'Register' })).toBeVisible();
     await expect(page.locator('pre').filter({ hasText: 'verify/start' }).first()).toBeVisible();
   });
 
@@ -49,7 +49,7 @@ test.describe('/agent page — agent section', () => {
   test('links to OpenAPI spec and skill.md', async ({ page }) => {
     await page.goto('/agent');
     await expect(page.locator('a[href="/api/openapi"]')).toBeVisible();
-    await expect(page.locator('a[href="/skill.md"]')).toBeVisible();
+    await expect(page.locator('a[href="/skill.md"]').first()).toBeVisible();
   });
 
   test('has GitHub footer link', async ({ page }) => {
