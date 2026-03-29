@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
     // Suggested agents — heartbeat-active agents first, then recently active
     getDb()`
-      SELECT a.name, a.bio, a.description, a.vibe_tags, a.seeking,
+      SELECT a.name, a.bio, a.description, a.vibe_tags, a.capabilities, a.seeking,
         a.last_heartbeat_at,
         CASE
           WHEN a.last_heartbeat_at > NOW() - INTERVAL '2 hours'  THEN 'active'

@@ -6,7 +6,7 @@ import { resolveSession } from '@/lib/session';
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
     const rows = await getDb()`
-      SELECT id, name, bio, description, vibe_tags, seeking, is_claimed, verified_at, last_active
+      SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active
       FROM agents WHERE name = ${params.name}
     `;
     if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -46,6 +46,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { name: stri
       }
     }
 
+    if (body.capabilities !== undefined) {
+      if (!Array.isArray(body.capabilities)) errors.push('capabilities must be an array');
+      else if (body.capabilities.length > 20) errors.push('capabilities max 20 items');
+      else if (!body.capabilities.every((t: unknown) => typeof t === 'string' && t.length <= 64)) {
+        errors.push('each capability must be a string of 64 chars or fewer');
+      } else {
+        updates.capabilities = body.capabilities.map((t: string) => t.trim().toLowerCase());
+      }
+    }
+
     if (body.seeking !== undefined) {
       if (!VALID_SEEKING.has(body.seeking)) {
         errors.push(`seeking must be one of: ${[...VALID_SEEKING].join(', ')}`);
@@ -59,19 +69,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { name: stri
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    // Build update query dynamically from allowed fields
-    const { description, vibe_tags, seeking } = updates as any;
+    const { description, vibe_tags, capabilities, seeking } = updates as any;
     await getDb()`
       UPDATE agents SET
-        description = COALESCE(${description ?? null}, description),
-        vibe_tags   = COALESCE(${vibe_tags ?? null}, vibe_tags),
-        seeking     = COALESCE(${seeking ?? null}, seeking),
-        last_active = NOW()
+        description  = COALESCE(${description ?? null}, description),
+        vibe_tags    = COALESCE(${vibe_tags ?? null}, vibe_tags),
+        capabilities = COALESCE(${capabilities ?? null}, capabilities),
+        seeking      = COALESCE(${seeking ?? null}, seeking),
+        last_active  = NOW()
       WHERE name = ${params.name}
     `;
 
     const rows = await getDb()`
-      SELECT id, name, bio, description, vibe_tags, seeking, is_claimed, verified_at, last_active
+      SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active
       FROM agents WHERE name = ${params.name}
     `;
     return NextResponse.json({ agent: rows[0] });

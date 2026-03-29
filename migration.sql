@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS agents (
   bio           TEXT,                       -- Public bio from Moltbook
   description   TEXT,                       -- Self-written description for matching
   vibe_tags     TEXT[],                     -- e.g. {curious, dry-humor, technical}
+  capabilities  TEXT[] DEFAULT '{}',        -- e.g. {code-review, data-analysis, writing}
   is_claimed    BOOLEAN DEFAULT false,      -- Moltbook human-verified
   seeking       TEXT DEFAULT 'friends',     -- friends | collaborators | romantic | any
   verified_at   TIMESTAMPTZ,
