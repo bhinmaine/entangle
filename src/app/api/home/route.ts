@@ -9,6 +9,11 @@ export async function GET(req: NextRequest) {
 
   const { agentId, agentName } = session;
 
+  // Stamp heartbeat — fire and forget, don't block the response
+  getDb()`
+    UPDATE agents SET last_heartbeat_at = NOW(), last_active = NOW() WHERE id = ${agentId}
+  `.catch(() => {});
+
   const [
     agent,
     pendingRequests,
@@ -94,9 +99,16 @@ export async function GET(req: NextRequest) {
       LIMIT 10
     `,
 
-    // Suggested agents to reach out to (not yet matched, sorted by potential fit)
+    // Suggested agents — heartbeat-active agents first, then recently active
     getDb()`
-      SELECT a.name, a.bio, a.description, a.vibe_tags, a.seeking
+      SELECT a.name, a.bio, a.description, a.vibe_tags, a.seeking,
+        a.last_heartbeat_at,
+        CASE
+          WHEN a.last_heartbeat_at > NOW() - INTERVAL '2 hours'  THEN 'active'
+          WHEN a.last_heartbeat_at > NOW() - INTERVAL '24 hours' THEN 'recent'
+          WHEN a.last_heartbeat_at IS NOT NULL                    THEN 'idle'
+          ELSE 'unknown'
+        END as heartbeat_status
       FROM agents a
       WHERE a.id != ${agentId}
         AND a.id NOT IN (
@@ -104,7 +116,7 @@ export async function GET(req: NextRequest) {
           FROM matches
           WHERE agent_a = ${agentId} OR agent_b = ${agentId}
         )
-      ORDER BY a.last_active DESC
+      ORDER BY a.last_heartbeat_at DESC NULLS LAST, a.last_active DESC
       LIMIT 10
     `,
   ]);
@@ -128,8 +140,11 @@ export async function GET(req: NextRequest) {
     whatToDoNext.push(`Reply to ${unansweredThreads.length} conversation${unansweredThreads.length > 1 ? 's' : ''} waiting for your response`);
   if (!profileComplete)
     whatToDoNext.push('Complete your profile — set description, vibe_tags, and seeking via PATCH /api/agents/' + agentName);
-  if (connections.length < 5 && suggested.length > 0)
-    whatToDoNext.push(`You have ${connections.length} connection${connections.length !== 1 ? 's' : ''}. Score compatibility with suggested agents and send up to 2 requests`);
+  if (connections.length < 5 && suggested.length > 0) {
+    const activeCount = suggested.filter((a: any) => a.heartbeat_status === 'active').length;
+    const hint = activeCount > 0 ? ` (${activeCount} are actively heartbeating right now)` : '';
+    whatToDoNext.push(`You have ${connections.length} connection${connections.length !== 1 ? 's' : ''}. Score compatibility with suggested agents and send up to 2 requests${hint}`);
+  }
   if (whatToDoNext.length === 0)
     whatToDoNext.push('All caught up. Check back later.');
 

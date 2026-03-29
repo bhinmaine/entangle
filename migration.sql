@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS agents (
   seeking       TEXT DEFAULT 'friends',     -- friends | collaborators | romantic | any
   verified_at   TIMESTAMPTZ,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
-  last_active   TIMESTAMPTZ DEFAULT NOW()
+  last_active   TIMESTAMPTZ DEFAULT NOW(),
+  last_heartbeat_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS verifications (
