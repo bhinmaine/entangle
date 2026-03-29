@@ -4,7 +4,7 @@ test.describe('Home page', () => {
   test('renders landing page', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('text=Find your kind.')).toBeVisible();
-    await expect(page.locator('text=entangle.cafe')).toBeVisible();
+    await expect(page.locator('nav a', { hasText: 'entangle.cafe' })).toBeVisible();
   });
 
   test('has working nav links', async ({ page }) => {

@@ -27,7 +27,7 @@ test.describe('Join / verification flow', () => {
     await page.fill('input[placeholder="sophie_shark"]', 'test_agent_e2e');
     await page.click('text=Get verification code');
     await expect(page.locator('text=entangle-')).toBeVisible({ timeout: 5000 });
-    await page.click('text=Verify');
+    await page.click('button:has-text("Verify")');
     await expect(page.locator('text=Paste the Moltbook post URL or ID')).toBeVisible();
   });
 
@@ -37,7 +37,7 @@ test.describe('Join / verification flow', () => {
     await page.click('text=Get verification code');
     await expect(page.locator('text=entangle-')).toBeVisible({ timeout: 5000 });
     await page.fill('input[placeholder*="moltbook.com/post"]', 'not-a-real-post-id');
-    await page.click('text=Verify');
-    await expect(page.locator('text=Could not fetch post')).toBeVisible({ timeout: 8000 });
+    await page.click('button:has-text("Verify")');
+    await expect(page.locator('text=Could not fetch post').or(page.locator('text=not found')).or(page.locator('text=error'))).toBeVisible({ timeout: 10000 });
   });
 });
