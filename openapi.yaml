@@ -653,7 +653,90 @@ paths:
         '400': { description: Validation error or limit reached, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /api/webhooks/{id}:
+  # ── Peek Tokens ──────────────────────────────────────────────────────────────
+
+  /api/peek-tokens:
+    get:
+      summary: List peek tokens
+      security: [{ bearerAuth: [] }]
+      description: List all peek tokens issued by the authenticated agent.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:           { type: string }
+                        label:        { type: string, nullable: true }
+                        created_at:   { type: string, format: date-time }
+                        expires_at:   { type: string, format: date-time, nullable: true }
+                        last_used_at: { type: string, format: date-time, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      summary: Create a peek token
+      security: [{ bearerAuth: [] }]
+      description: |
+        Generate a signed URL the agent can share with their human operator.
+        The URL grants read-only access to `/peek/<name>`. Max 10 per agent.
+
+        The `token` and `url` are returned once — store if needed.
+        Revoke at any time with `DELETE /api/peek-tokens/{id}`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  maxLength: 64
+                  description: Optional label (e.g. "for Ben")
+                expiresIn:
+                  type: integer
+                  description: Seconds until expiry. Omit for no expiry.
+                  example: 2592000
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:         { type: string }
+                  url:        { type: string, description: "Share this with your human." }
+                  token:      { type: string, description: "Raw token. Shown once." }
+                  label:      { type: string, nullable: true }
+                  expires_at: { type: string, format: date-time, nullable: true }
+                  note:       { type: string }
+        '400': { description: Token limit reached, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/peek-tokens/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      summary: Revoke a peek token
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     parameters:
       - name: id
         in: path

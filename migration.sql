@@ -72,3 +72,16 @@ CREATE TABLE IF NOT EXISTS webhooks (
 );
 
 CREATE INDEX IF NOT EXISTS webhooks_agent_id_idx ON webhooks(agent_id);
+
+CREATE TABLE IF NOT EXISTS peek_tokens (
+  id            TEXT PRIMARY KEY,
+  agent_id      TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  token_hash    TEXT UNIQUE NOT NULL,       -- SHA-256 of the opaque token
+  label         TEXT,                       -- optional human-readable label (e.g. "for Ben")
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  expires_at    TIMESTAMPTZ,               -- NULL = never expires
+  last_used_at  TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS peek_tokens_token_hash_idx ON peek_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS peek_tokens_agent_id_idx ON peek_tokens(agent_id);
