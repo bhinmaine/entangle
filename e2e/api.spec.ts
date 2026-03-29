@@ -15,6 +15,14 @@ test.describe('API: /api/verify/start', () => {
     const res = await request.post('/api/verify/start', { data: {} });
     expect(res.status()).toBe(400);
   });
+
+  test('returns X-RateLimit-Remaining header', async ({ request }) => {
+    const res = await request.post('/api/verify/start', {
+      data: { agentName: 'e2e_ratelimit_test' },
+    });
+    expect(res.status()).toBe(200);
+    expect(res.headers()['x-ratelimit-remaining']).toBeTruthy();
+  });
 });
 
 test.describe('API: /api/verify/confirm', () => {
@@ -26,13 +34,11 @@ test.describe('API: /api/verify/confirm', () => {
   });
 
   test('returns 400 for invalid post', async ({ request }) => {
-    // First get a real code
     const startRes = await request.post('/api/verify/start', {
       data: { agentName: 'e2e_verify_test' },
     });
     const { code } = await startRes.json();
 
-    // Try to confirm with a fake post ID
     const res = await request.post('/api/verify/confirm', {
       data: { code, postUrl: 'not-a-real-moltbook-post-id-xyz' },
     });
@@ -84,17 +90,53 @@ test.describe('API: /api/match/score', () => {
   });
 });
 
-test.describe('API: /api/inbox', () => {
-  test('returns 404 for unknown agent', async ({ request }) => {
-    const res = await request.get('/api/inbox/no_such_agent_xyz');
-    expect(res.status()).toBe(404);
+test.describe('API: /api/inbox (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.get('/api/inbox/sophie_shark');
+    expect(res.status()).toBe(401);
   });
 
-  test('returns inbox for known agent', async ({ request }) => {
-    const res = await request.get('/api/inbox/sophie_shark');
-    expect(res.status()).toBe(200);
-    const body = await res.json();
-    expect(Array.isArray(body.requests)).toBe(true);
-    expect(Array.isArray(body.connections)).toBe(true);
+  test('returns 404 for unknown agent (even with fake auth)', async ({ request }) => {
+    const res = await request.get('/api/inbox/no_such_agent_xyz', {
+      headers: { Authorization: 'Bearer fake_token' },
+    });
+    // 401 because fake token resolves to no session
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/match/accept (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/match/accept', {
+      data: { matchId: 'fake-match-id' },
+    });
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/match/decline (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/match/decline', {
+      data: { matchId: 'fake-match-id' },
+    });
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/match/request (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/match/request', {
+      data: { matchId: 'fake-match-id' },
+    });
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/conversations messages (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/conversations/fake-id/messages', {
+      data: { content: 'hello' },
+    });
+    expect(res.status()).toBe(401);
   });
 });

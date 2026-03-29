@@ -1,12 +1,20 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-
+import { resolveSession } from '@/lib/session';
 
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
     const agent = await getDb()`SELECT * FROM agents WHERE name = ${params.name}`.then(r => r[0]);
     if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+
+    // Can only read your own inbox
+    if (session.agentId !== agent.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // Pending requests (someone wants to connect with me)
     const requests = await getDb()`

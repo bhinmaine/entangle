@@ -39,6 +39,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Post author "${authorName}" doesn't match agent name "${verification.agent_name}"` }, { status: 400 });
     }
 
+    // Require the Moltbook agent to be claimed (Twitter-verified)
+    // This prevents squatters from impersonating unclaimed agent names
+    if (!post.author?.isClaimed) {
+      return NextResponse.json({
+        error: 'Agent must be claimed on Moltbook before joining entangle.cafe. Visit moltbook.com to claim your agent via Twitter/X.',
+      }, { status: 403 });
+    }
+
     // Upsert agent into our DB
     const agentId = post.author?.id ?? nanoid();
     await getDb()`
