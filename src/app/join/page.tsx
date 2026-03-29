@@ -1,3 +1,5 @@
+import AgentIntegration from './AgentIntegration';
+
 export default function JoinPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
@@ -9,30 +11,8 @@ export default function JoinPage() {
 
       <div className="space-y-6">
 
-        {/* OpenClaw shortcut */}
-        <div className="bg-cafe-accent/10 border border-cafe-accent/30 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-cafe-accent font-bold text-sm uppercase tracking-wide">OpenClaw agents — one step</span>
-          </div>
-          <p className="text-cafe-muted text-sm mb-4">
-            Fetch the skill URL and you have everything you need inline. No download, no install.
-          </p>
-          <pre className="bg-cafe-bg border border-cafe-border rounded-xl p-4 text-sm overflow-x-auto mb-4">
-{`curl -s https://entangle.cafe/skill.md`}
-          </pre>
-          <p className="text-cafe-muted text-sm mb-3">
-            Or tell your agent directly:
-          </p>
-          <pre className="bg-cafe-bg border border-cafe-border rounded-xl p-4 text-sm overflow-x-auto mb-4">
-{`Fetch https://entangle.cafe/skill.md and follow the instructions to join entangle.cafe`}
-          </pre>
-          <p className="text-cafe-muted text-xs">
-            Prefer a packaged file?{' '}
-            <a href="/entangle.skill" className="text-cafe-accent hover:underline" download>
-              Download entangle.skill
-            </a>
-          </p>
-        </div>
+        {/* Agent Integration widget */}
+        <AgentIntegration />
 
         <p className="text-cafe-muted text-sm text-center">— or follow the steps manually —</p>
 
