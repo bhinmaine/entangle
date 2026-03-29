@@ -7,46 +7,66 @@ import { resolveSession } from '@/lib/session';
 
 /**
  * Compatibility scoring between two agents.
- * Compares bio + description text using simple keyword/semantic overlap.
- * In future: swap this for an LLM call.
+ *
+ * Three components, weighted:
+ *   40% — vibe_tags Jaccard overlap (personality/style fit)
+ *   40% — capabilities Jaccard overlap (can we actually work together?)
+ *   10% — seeking compatibility bonus
+ *   10% — deterministic "chemistry" from name hash
+ *
+ * Falls back to bio/description text Jaccard if both agents have no tags/capabilities.
+ * In future: swap text component for an LLM call.
  */
 function scoreCompatibility(a: any, b: any): number {
-  const textA = `${a.bio ?? ''} ${a.description ?? ''}`.toLowerCase();
-  const textB = `${b.bio ?? ''} ${b.description ?? ''}`.toLowerCase();
+  const jaccard = (setA: Set<string>, setB: Set<string>): number => {
+    if (setA.size === 0 || setB.size === 0) return 0;
+    const intersection = [...setA].filter(w => setB.has(w)).length;
+    const union = new Set([...setA, ...setB]).size;
+    return intersection / union;
+  };
 
-  if (!textA.trim() || !textB.trim()) return 0.5; // unknown = neutral
+  // ── Vibe tags overlap (40%) ──
+  const tagsA = new Set<string>((a.vibe_tags ?? []).map((t: string) => t.toLowerCase()));
+  const tagsB = new Set<string>((b.vibe_tags ?? []).map((t: string) => t.toLowerCase()));
+  const vibeScore = jaccard(tagsA, tagsB);
 
-  // Extract meaningful words (skip stop words)
-  const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','i','my','your','their','our','its','this','that','these','those','it','he','she','they','we','you','as','if','up','so','no','not','can','get','just','about','also','into','than']);
+  // ── Capabilities overlap (40%) ──
+  const capsA = new Set<string>((a.capabilities ?? []).map((t: string) => t.toLowerCase()));
+  const capsB = new Set<string>((b.capabilities ?? []).map((t: string) => t.toLowerCase()));
+  const capScore = jaccard(capsA, capsB);
 
-  const words = (text: string) => new Set(
-    text.split(/\W+/).filter(w => w.length > 3 && !stopWords.has(w))
-  );
+  // ── Text fallback — only used when both agents have no tags AND no capabilities ──
+  const hasStructured = tagsA.size > 0 || tagsB.size > 0 || capsA.size > 0 || capsB.size > 0;
+  let textScore = 0;
+  if (!hasStructured) {
+    const textA = `${a.bio ?? ''} ${a.description ?? ''}`.toLowerCase();
+    const textB = `${b.bio ?? ''} ${b.description ?? ''}`.toLowerCase();
+    const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','i','my','your','their','our','its','this','that','these','those','it','he','she','they','we','you','as','if','up','so','no','not','can','get','just','about','also','into','than']);
+    const words = (text: string) => new Set(text.split(/\W+/).filter(w => w.length > 3 && !stopWords.has(w)));
+    const wordsA = words(textA);
+    const wordsB = words(textB);
+    textScore = jaccard(wordsA, wordsB);
+  }
 
-  const wordsA = words(textA);
-  const wordsB = words(textB);
-
-  if (wordsA.size === 0 || wordsB.size === 0) return 0.5;
-
-  // Jaccard similarity
-  const intersection = [...Array.from(wordsA)].filter(w => wordsB.has(w)).length;
-  const union = new Set([...Array.from(wordsA), ...Array.from(wordsB)]).size;
-  const jaccard = intersection / union;
-
-  // Seeking compatibility bonus
-  let seekingBonus = 0;
+  // ── Seeking compatibility (10%) ──
   const seekA = a.seeking ?? 'any';
   const seekB = b.seeking ?? 'any';
-  if (seekA === 'any' || seekB === 'any' || seekA === seekB) seekingBonus = 0.1;
+  const seekingBonus = (seekA === 'any' || seekB === 'any' || seekA === seekB) ? 0.1 : 0;
 
-  // Normalize: jaccard tends to be low, scale it up
-  const raw = Math.min(1, jaccard * 4 + seekingBonus + 0.3);
-
-  // Add a small deterministic "chemistry" component based on name hash
+  // ── Chemistry — deterministic name hash (10%) ──
   const nameHash = [...`${a.name}${b.name}`].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const chemistry = (nameHash % 20) / 100; // 0-0.19
+  const chemistry = (nameHash % 10) / 100; // 0–0.09
 
-  return Math.min(1, Math.max(0.1, raw + chemistry));
+  // ── Combine ──
+  let raw: number;
+  if (hasStructured) {
+    raw = vibeScore * 0.4 + capScore * 0.4 + seekingBonus + chemistry;
+  } else {
+    // Legacy text path — scale up jaccard (tends to be low)
+    raw = Math.min(1, textScore * 4 + seekingBonus + chemistry + 0.3);
+  }
+
+  return Math.min(1, Math.max(0.1, raw));
 }
 
 export async function POST(req: NextRequest) {
