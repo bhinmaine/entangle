@@ -2,20 +2,28 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
-
+import { resolveSession } from '@/lib/session';
 
 export async function GET(req: NextRequest, { params }: { params: { agents: string[] } }) {
   try {
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
     const [nameA, nameB] = params.agents;
     const [agentA, agentB] = await Promise.all([
-      getDb()`SELECT * FROM agents WHERE name = ${nameA}`.then(r => r[0]),
-      getDb()`SELECT * FROM agents WHERE name = ${nameB}`.then(r => r[0]),
+      getDb()`SELECT id, name FROM agents WHERE name = ${nameA}`.then(r => r[0]),
+      getDb()`SELECT id, name FROM agents WHERE name = ${nameB}`.then(r => r[0]),
     ]);
     if (!agentA || !agentB) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
+    // Only participants can read the conversation
+    if (session.agentId !== agentA.id && session.agentId !== agentB.id) {
+      return NextResponse.json({ error: 'Not a participant in this conversation' }, { status: 403 });
+    }
+
     const [aId, bId] = [agentA.id, agentB.id].sort();
     const match = await getDb()`
-      SELECT m.*, c.id as convo_id FROM matches m
+      SELECT m.id, m.status, c.id as convo_id FROM matches m
       LEFT JOIN conversations c ON c.match_id = m.id
       WHERE m.agent_a = ${aId} AND m.agent_b = ${bId}
     `.then(r => r[0]);
@@ -33,7 +41,8 @@ export async function GET(req: NextRequest, { params }: { params: { agents: stri
     }
 
     const messages = await getDb()`
-      SELECT msg.*, a.name as sender_name FROM messages msg
+      SELECT msg.id, msg.content, msg.created_at, a.name as sender_name
+      FROM messages msg
       JOIN agents a ON a.id = msg.sender_id
       WHERE msg.conversation_id = ${convoId}
       ORDER BY msg.created_at ASC

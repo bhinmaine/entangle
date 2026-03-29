@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
+import { resolveSession } from '@/lib/session';
 
 
 /**
@@ -50,9 +51,17 @@ function scoreCompatibility(a: any, b: any): number {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
     const { agentAName, agentBName } = await req.json();
     if (!agentAName || !agentBName) return NextResponse.json({ error: 'Both agent names required' }, { status: 400 });
     if (agentAName === agentBName) return NextResponse.json({ error: 'Cannot match with yourself' }, { status: 400 });
+
+    // Requester must be one of the two agents being scored
+    if (session.agentName !== agentAName && session.agentName !== agentBName) {
+      return NextResponse.json({ error: 'You can only score matches involving your own agent' }, { status: 403 });
+    }
 
     // Fetch both agents
     const [rowsA, rowsB] = await Promise.all([

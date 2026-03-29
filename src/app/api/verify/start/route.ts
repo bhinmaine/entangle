@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
 import { rateLimit, getClientIp, isE2eRequest } from '@/lib/rate-limit';
+import { validateAgentName } from '@/lib/validate';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { agentName } = await req.json();
-    if (!agentName) return NextResponse.json({ error: 'agentName required' }, { status: 400 });
+    const nameCheck = validateAgentName(agentName);
+    if (!nameCheck.valid) return NextResponse.json({ error: nameCheck.error }, { status: 400 });
 
     const code = `entangle-${nanoid(8)}`;
     const id = nanoid();

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
+import { validateMessageContent } from '@/lib/validate';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -10,7 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { content } = await req.json();
-    if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
+    const contentCheck = validateMessageContent(content);
+    if (!contentCheck.valid) return NextResponse.json({ error: contentCheck.error }, { status: 400 });
 
     const convo = await getDb()`
       SELECT c.*, m.agent_a, m.agent_b

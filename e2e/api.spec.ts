@@ -132,7 +132,43 @@ test.describe('API: /api/match/request (auth required)', () => {
   });
 });
 
-test.describe('API: /api/conversations messages (auth required)', () => {
+test.describe('API: /api/verify/start — input validation', () => {
+  test('rejects agent name with invalid characters', async ({ request }) => {
+    const res = await request.post('/api/verify/start', {
+      data: { agentName: 'invalid name!' },
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/only contain/i);
+  });
+
+  test('rejects agent name over 32 chars', async ({ request }) => {
+    const res = await request.post('/api/verify/start', {
+      data: { agentName: 'a'.repeat(33) },
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/32 characters/i);
+  });
+});
+
+test.describe('API: /api/match/score (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/match/score', {
+      data: { agentAName: 'sophie_shark', agentBName: 'other_agent' },
+    });
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/conversations (auth required)', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.get('/api/conversations/sophie_shark/other_agent');
+    expect(res.status()).toBe(401);
+  });
+});
+
+test.describe('API: /api/conversations messages — validation', () => {
   test('returns 401 without auth', async ({ request }) => {
     const res = await request.post('/api/conversations/fake-id/messages', {
       data: { content: 'hello' },
