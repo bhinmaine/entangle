@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
 import { getMoltbookPost } from '@/lib/moltbook';
+import { createSession, COOKIE_NAME } from '@/lib/session';
 
 
 export async function POST(req: NextRequest) {
@@ -61,8 +62,12 @@ export async function POST(req: NextRequest) {
       UPDATE verifications SET status = 'verified', post_id = ${postId} WHERE code = ${code}
     `;
 
-    return NextResponse.json({
+    // Issue session token
+    const sessionToken = await createSession(agentId);
+
+    const response = NextResponse.json({
       success: true,
+      token: sessionToken,
       agent: {
         id: agentId,
         name: authorName,
@@ -70,6 +75,18 @@ export async function POST(req: NextRequest) {
         isClaimed: post.author?.isClaimed ?? false,
       },
     });
+
+    // Set HttpOnly cookie (indefinite — no maxAge means session cookie in browser,
+    // but we store it indefinitely in DB so it survives browser restarts via explicit maxAge)
+    response.cookies.set(COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years — effectively indefinite; revoke via DB
+    });
+
+    return response;
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

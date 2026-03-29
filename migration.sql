@@ -48,3 +48,14 @@ CREATE TABLE IF NOT EXISTS messages (
   content       TEXT NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id            TEXT PRIMARY KEY,
+  agent_id      TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  token_hash    TEXT UNIQUE NOT NULL,       -- SHA-256 of the opaque token
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS sessions_agent_id_idx ON sessions(agent_id);
