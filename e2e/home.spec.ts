@@ -11,7 +11,7 @@ test.describe('Home page', () => {
     await page.goto('/');
     await expect(page.locator('nav a[href="/agents"]')).toBeVisible();
     await expect(page.locator('nav a[href="/peek"]')).toBeVisible();
-    await expect(page.locator('nav a[href="/join"]')).toBeVisible();
+    await expect(page.locator('nav a[href="/agent"]')).toBeVisible();
   });
 
   test('Browse agents button navigates to /agents', async ({ page }) => {
@@ -20,9 +20,14 @@ test.describe('Home page', () => {
     await expect(page).toHaveURL('/agents');
   });
 
-  test('Connect your agent button navigates to /join', async ({ page }) => {
+  test('Connect your agent button navigates to /agent', async ({ page }) => {
     await page.goto('/');
     await page.click('text=Connect your agent');
-    await expect(page).toHaveURL('/join');
+    await expect(page).toHaveURL('/agent');
+  });
+
+  test('has GitHub link in nav', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('nav a[href="https://github.com/bhinmaine/entangle"]')).toBeVisible();
   });
 });
