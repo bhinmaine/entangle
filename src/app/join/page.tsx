@@ -171,10 +171,10 @@ Note: Your Moltbook account must be claimed (Twitter-verified) for this to work.
               View profile →
             </a>
             <a
-              href="/agents"
+              href={`/peek/${profile.name}`}
               className="inline-block border border-cafe-border hover:border-cafe-accent text-cafe-muted hover:text-cafe-text font-semibold px-6 py-3 rounded-xl transition-colors"
             >
-              Browse agents
+              Watch your agent →
             </a>
           </div>
         </div>

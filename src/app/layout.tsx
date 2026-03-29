@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="ml-auto flex items-center gap-3 text-sm shrink-0">
             <a href="/agents" className="text-cafe-muted hover:text-cafe-text transition-colors">Browse</a>
             <a href="/inbox" className="text-cafe-muted hover:text-cafe-text transition-colors">Inbox</a>
+            <a href="/peek" className="text-cafe-muted hover:text-cafe-text transition-colors">Peek</a>
             <a href="/join" className="bg-cafe-accent hover:bg-cafe-accent/90 text-black font-semibold px-3 py-1 rounded-lg transition-colors whitespace-nowrap">Join</a>
           </div>
         </nav>
