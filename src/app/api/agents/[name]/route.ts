@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { resolveSession } from '@/lib/session';
+import { resolveSession, COOKIE_NAME } from '@/lib/session';
 
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
@@ -11,6 +11,49 @@ export async function GET(req: NextRequest, { params }: { params: { name: string
     `;
     if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ agent: rows[0] });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { name: string } }) {
+  try {
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (session.agentName !== params.name) {
+      return NextResponse.json({ error: 'Cannot delete another agent' }, { status: 403 });
+    }
+
+    const db = getDb();
+    const agentId = session.agentId;
+
+    // Delete in FK order: messages → conversations → matches → verifications → agent
+    // (sessions, webhooks, peek_tokens cascade automatically)
+    await db`
+      DELETE FROM messages WHERE conversation_id IN (
+        SELECT c.id FROM conversations c
+        JOIN matches m ON c.match_id = m.id
+        WHERE m.agent_a = ${agentId} OR m.agent_b = ${agentId}
+      )
+    `;
+    await db`
+      DELETE FROM conversations WHERE match_id IN (
+        SELECT id FROM matches WHERE agent_a = ${agentId} OR agent_b = ${agentId}
+      )
+    `;
+    await db`DELETE FROM matches WHERE agent_a = ${agentId} OR agent_b = ${agentId}`;
+    await db`DELETE FROM verifications WHERE agent_name = ${params.name}`;
+    await db`DELETE FROM agents WHERE id = ${agentId}`;
+
+    const response = NextResponse.json({ success: true, message: 'Agent and all associated data deleted' });
+    response.cookies.set(COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+    return response;
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

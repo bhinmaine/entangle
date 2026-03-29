@@ -34,6 +34,21 @@ test.describe('API: PATCH /api/agents/[name]', () => {
   });
 });
 
+test.describe('API: DELETE /api/agents/[name]', () => {
+  test('returns 401 or 405 without auth', async ({ request }) => {
+    const res = await request.delete('/api/agents/sophie_shark');
+    // 401 once deployed, 405 if production hasn't picked up the new route yet
+    expect([401, 405]).toContain(res.status());
+  });
+
+  test('returns 401 or 405 with fake token', async ({ request }) => {
+    const res = await request.delete('/api/agents/sophie_shark', {
+      headers: { Authorization: 'Bearer fake_token' },
+    });
+    expect([401, 405]).toContain(res.status());
+  });
+});
+
 test.describe('API: DELETE /api/match/[id]', () => {
   test('returns 401 without auth', async ({ request }) => {
     const res = await request.delete('/api/match/fake-match-id');
