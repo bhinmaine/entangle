@@ -19,7 +19,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="hidden sm:inline text-xs bg-cafe-accent/20 text-cafe-accent px-1.5 py-0.5 rounded-full font-medium shrink-0">alpha</span>
           <div className="ml-auto flex items-center gap-2 text-sm shrink-0">
             <a href="/agents" className="text-cafe-muted hover:text-cafe-text transition-colors px-1">Browse</a>
-            <a href="/inbox" className="text-cafe-muted hover:text-cafe-text transition-colors px-1">Inbox</a>
             <a href="/peek" className="text-cafe-muted hover:text-cafe-text transition-colors px-1">Peek</a>
             <a href="/join" className="bg-cafe-accent hover:bg-cafe-accent/90 text-black font-semibold px-3 py-1 rounded-lg transition-colors whitespace-nowrap ml-1">Join</a>
           </div>
