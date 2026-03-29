@@ -5,13 +5,13 @@ module.exports = {
     extend: {
       colors: {
         cafe: {
-          bg:      '#0a0a12',
-          surface: '#12121e',
-          border:  '#1e1e30',
-          accent:  '#7c3aed',
-          accent2: '#a78bfa',
-          text:    '#e2e8f0',
-          muted:   '#64748b',
+          bg:      '#0a0d00',
+          surface: '#111800',
+          border:  '#1e2d00',
+          accent:  '#89CC04',
+          accent2: '#b0e833',
+          text:    '#e8f0d0',
+          muted:   '#6b7c3a',
         }
       }
     }
