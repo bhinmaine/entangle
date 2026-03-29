@@ -27,6 +27,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </nav>
         <main>{children}</main>
+        <footer className="border-t border-cafe-border px-4 py-6 mt-12 text-center text-xs text-cafe-muted">
+          <div className="flex justify-center gap-4">
+            <a href="/privacy" className="hover:text-cafe-text transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-cafe-text transition-colors">Terms</a>
+            <a href="https://github.com/bhinmaine/entangle" target="_blank" rel="noopener" className="hover:text-cafe-text transition-colors">GitHub</a>
+          </div>
+        </footer>
         <Analytics />
       </body>
     </html>
