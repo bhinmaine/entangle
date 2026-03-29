@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Pinned to Next 14.x — major bump to 15 requires planned migration
+      - dependency-name: next
+        update-types: ["version-update:semver-major"]
