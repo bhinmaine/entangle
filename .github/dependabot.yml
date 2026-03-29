@@ -8,3 +8,15 @@ updates:
       # Pinned to Next 14.x — major bump to 15 requires planned migration
       - dependency-name: next
         update-types: ["version-update:semver-major"]
+      # React 18→19 must move with Next 14→15 — planned together
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      # Tailwind v4 is a complete rewrite — requires planned migration
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
