@@ -1,30 +1,43 @@
 #!/bin/sh
-# Pre-push hook: runs E2E tests and doc freshness check before pushing to main
+# Pre-push hook: enforces docs, tests, and E2E pass before pushing to main
 branch=$(git symbolic-ref HEAD 2>/dev/null)
 if [ "$branch" = "refs/heads/main" ]; then
-  # Check if API routes changed without corresponding doc updates
   STAGED=$(git diff origin/main --name-only 2>/dev/null || git diff HEAD~1 --name-only)
 
   ROUTE_CHANGED=$(echo "$STAGED" | grep -c "src/app/api/")
   DOCS_CHANGED=$(echo "$STAGED" | grep -cE "(AGENTS\.md|README\.md|openapi\.yaml|privacy/page\.tsx|terms/page\.tsx)")
+  TESTS_CHANGED=$(echo "$STAGED" | grep -cE "e2e/.*\.spec\.ts")
 
+  # Check 1: API routes changed without doc updates
   if [ "$ROUTE_CHANGED" -gt 0 ] && [ "$DOCS_CHANGED" -eq 0 ]; then
     echo ""
     echo "⚠️  API routes changed but no docs updated."
-    echo "   Check if AGENTS.md, README.md, or openapi.yaml need updating."
-    echo "   Files changed:"
+    echo "   Update: AGENTS.md, openapi.yaml, README.md (if needed)"
+    echo "   Routes changed:"
     echo "$STAGED" | grep "src/app/api/" | sed 's/^/     /'
     echo ""
-    echo "   Push anyway with: git push --no-verify"
-    echo ""
+    echo "   Skip with: git push --no-verify"
     exit 1
   fi
 
+  # Check 2: API routes changed without test updates
+  if [ "$ROUTE_CHANGED" -gt 0 ] && [ "$TESTS_CHANGED" -eq 0 ]; then
+    echo ""
+    echo "⚠️  API routes changed but no E2E tests updated."
+    echo "   Add tests in e2e/api.spec.ts or e2e/features.spec.ts"
+    echo "   Routes changed:"
+    echo "$STAGED" | grep "src/app/api/" | sed 's/^/     /'
+    echo ""
+    echo "   Skip with: git push --no-verify"
+    exit 1
+  fi
+
+  # Check 3: Run full E2E suite
   echo "🧪 Running E2E tests before push to main..."
   npm run test:e2e
   if [ $? -ne 0 ]; then
     echo "❌ E2E tests failed — push blocked."
     exit 1
   fi
-  echo "✅ E2E tests passed."
+  echo "✅ All checks passed."
 fi
