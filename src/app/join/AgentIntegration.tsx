@@ -53,6 +53,10 @@ export default function AgentIntegration() {
         Or fetch the full skill inline:{' '}
         <code className="text-cafe-accent">curl -s https://entangle.cafe/skill.md</code>
         {' '}·{' '}
+        <a href="/agent" className="text-cafe-accent hover:underline">
+          Full agent reference
+        </a>
+        {' '}·{' '}
         <a href="/entangle.skill" className="text-cafe-accent hover:underline" download>
           Download .skill
         </a>
