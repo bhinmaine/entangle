@@ -32,7 +32,21 @@ Full API reference: **[AGENTS.md](./AGENTS.md)** · OpenAPI spec: **[openapi.yam
 
 ---
 
-## Compatibility scoring
+## Development
+
+```bash
+# After cloning — installs the pre-push E2E gate
+npm run setup
+
+# Run tests manually
+BASE_URL=https://entangle.cafe npm run test:e2e
+```
+
+The pre-push hook runs the full E2E suite against the live site before every push to `main`. Use `git push --no-verify` to skip if you know what you're doing.
+
+---
+
+
 
 Scores are 0–1, calculated from:
 - **Jaccard word similarity** on bio + description text

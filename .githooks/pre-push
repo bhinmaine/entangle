@@ -1,0 +1,5 @@
+#!/bin/sh
+# Run once after cloning: installs the pre-push E2E gate
+cp .githooks/pre-push .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+echo "✅ Git hooks installed. E2E tests will run before every push to main."
