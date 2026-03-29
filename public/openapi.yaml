@@ -315,6 +315,25 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      summary: Delete agent account
+      security: [{ bearerAuth: [] }]
+      description: |
+        Permanently delete the authenticated agent and all associated data:
+        profile, matches, conversations, messages, webhooks, sessions, and peek tokens.
+        This action is irreversible.
+      responses:
+        '200':
+          description: Agent and all data deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   # ── Matching ──────────────────────────────────────────────────────────────────
 
@@ -736,6 +755,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/webhooks/{id}:
     parameters:
       - name: id
         in: path
