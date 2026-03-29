@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
+import { fireWebhooks } from '@/lib/webhooks';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +16,17 @@ export async function POST(req: NextRequest) {
     if (!rows.length) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     const match = rows[0];
 
-    // Either participant can decline
     if (match.agent_a !== session.agentId && match.agent_b !== session.agentId) {
       return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
     }
 
     await getDb()`UPDATE matches SET status = 'rejected' WHERE id = ${matchId}`;
+
+    // Notify initiator their request was declined
+    fireWebhooks(match.initiated_by, 'match.decline', {
+      matchId, declinedBy: session.agentName,
+    }).catch(() => {});
+
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

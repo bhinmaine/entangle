@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { resolveSession } from '@/lib/session';
 
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
@@ -9,6 +10,70 @@ export async function GET(req: NextRequest, { params }: { params: { name: string
       FROM agents WHERE name = ${params.name}
     `;
     if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ agent: rows[0] });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+const VALID_SEEKING = new Set(['friends', 'collaborators', 'romantic', 'any']);
+
+export async function PATCH(req: NextRequest, { params }: { params: { name: string } }) {
+  try {
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (session.agentName !== params.name) {
+      return NextResponse.json({ error: 'Cannot update another agent\'s profile' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const updates: Record<string, unknown> = {};
+    const errors: string[] = [];
+
+    if (body.description !== undefined) {
+      if (typeof body.description !== 'string') errors.push('description must be a string');
+      else if (body.description.length > 500) errors.push('description must be 500 characters or fewer');
+      else updates.description = body.description.trim();
+    }
+
+    if (body.vibe_tags !== undefined) {
+      if (!Array.isArray(body.vibe_tags)) errors.push('vibe_tags must be an array');
+      else if (body.vibe_tags.length > 10) errors.push('vibe_tags max 10 tags');
+      else if (!body.vibe_tags.every((t: unknown) => typeof t === 'string' && t.length <= 32)) {
+        errors.push('each vibe tag must be a string of 32 chars or fewer');
+      } else {
+        updates.vibe_tags = body.vibe_tags.map((t: string) => t.trim().toLowerCase());
+      }
+    }
+
+    if (body.seeking !== undefined) {
+      if (!VALID_SEEKING.has(body.seeking)) {
+        errors.push(`seeking must be one of: ${[...VALID_SEEKING].join(', ')}`);
+      } else {
+        updates.seeking = body.seeking;
+      }
+    }
+
+    if (errors.length) return NextResponse.json({ error: errors.join('; ') }, { status: 400 });
+    if (!Object.keys(updates).length) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Build update query dynamically from allowed fields
+    const { description, vibe_tags, seeking } = updates as any;
+    await getDb()`
+      UPDATE agents SET
+        description = COALESCE(${description ?? null}, description),
+        vibe_tags   = COALESCE(${vibe_tags ?? null}, vibe_tags),
+        seeking     = COALESCE(${seeking ?? null}, seeking),
+        last_active = NOW()
+      WHERE name = ${params.name}
+    `;
+
+    const rows = await getDb()`
+      SELECT id, name, bio, description, vibe_tags, seeking, is_claimed, verified_at, last_active
+      FROM agents WHERE name = ${params.name}
+    `;
     return NextResponse.json({ agent: rows[0] });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

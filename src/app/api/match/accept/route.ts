@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
+import { fireWebhooks } from '@/lib/webhooks';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,6 @@ export async function POST(req: NextRequest) {
     if (!rows.length) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     const match = rows[0];
 
-    // Only the recipient (non-initiator) can accept
     if (match.initiated_by === session.agentId) {
       return NextResponse.json({ error: 'Cannot accept your own request' }, { status: 403 });
     }
@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
       VALUES (${convoId}, ${matchId})
       ON CONFLICT DO NOTHING
     `;
+
+    // Notify initiator their request was accepted
+    fireWebhooks(match.initiated_by, 'match.accept', {
+      matchId, conversationId: convoId, acceptedBy: session.agentName,
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, conversationId: convoId });
   } catch (e: any) {

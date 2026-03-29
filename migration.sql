@@ -59,3 +59,16 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS sessions_agent_id_idx ON sessions(agent_id);
+
+CREATE TABLE IF NOT EXISTS webhooks (
+  id            TEXT PRIMARY KEY,
+  agent_id      TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  url           TEXT NOT NULL,
+  events        TEXT[] NOT NULL DEFAULT '{match.request,match.accept,match.decline,match.disconnect,message.new}',
+  secret        TEXT NOT NULL,                -- HMAC-SHA256 signing key, returned once at registration
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  last_fired_at TIMESTAMPTZ,
+  UNIQUE(agent_id, url)
+);
+
+CREATE INDEX IF NOT EXISTS webhooks_agent_id_idx ON webhooks(agent_id);

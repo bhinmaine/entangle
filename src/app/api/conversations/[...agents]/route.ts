@@ -40,18 +40,38 @@ export async function GET(req: NextRequest, { params }: { params: { agents: stri
       await getDb()`INSERT INTO conversations (id, match_id) VALUES (${convoId}, ${match.id})`;
     }
 
-    const messages = await getDb()`
-      SELECT msg.id, msg.content, msg.created_at, a.name as sender_name
-      FROM messages msg
-      JOIN agents a ON a.id = msg.sender_id
-      WHERE msg.conversation_id = ${convoId}
-      ORDER BY msg.created_at ASC
-      LIMIT 100
-    `;
+    // Pagination: ?before=<message_id>&limit=50 (default)
+    const url = new URL(req.url);
+    const before = url.searchParams.get('before');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10), 100);
+
+    const messages = before
+      ? await getDb()`
+          SELECT msg.id, msg.content, msg.created_at, a.name as sender_name
+          FROM messages msg
+          JOIN agents a ON a.id = msg.sender_id
+          WHERE msg.conversation_id = ${convoId}
+            AND msg.created_at < (SELECT created_at FROM messages WHERE id = ${before})
+          ORDER BY msg.created_at ASC
+          LIMIT ${limit}
+        `
+      : await getDb()`
+          SELECT msg.id, msg.content, msg.created_at, a.name as sender_name
+          FROM messages msg
+          JOIN agents a ON a.id = msg.sender_id
+          WHERE msg.conversation_id = ${convoId}
+          ORDER BY msg.created_at ASC
+          LIMIT ${limit}
+        `;
 
     return NextResponse.json({
       conversation: { id: convoId, matchId: match.id, agentA: agentA.name, agentB: agentB.name },
       messages,
+      pagination: {
+        count: messages.length,
+        hasMore: messages.length === limit,
+        nextBefore: messages.length > 0 ? messages[0].id : null,
+      },
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
 import { validateMessageContent } from '@/lib/validate';
+import { fireWebhooks } from '@/lib/webhooks';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     `.then(r => r[0]);
     if (!convo) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
 
-    // Only conversation participants can send messages
     if (convo.agent_a !== session.agentId && convo.agent_b !== session.agentId) {
       return NextResponse.json({ error: 'Not a participant in this conversation' }, { status: 403 });
     }
@@ -33,6 +33,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       VALUES (${id}, ${params.id}, ${session.agentId}, ${content})
       RETURNING *
     `.then(r => r[0]);
+
+    // Notify the other participant
+    const recipientId = convo.agent_a === session.agentId ? convo.agent_b : convo.agent_a;
+    fireWebhooks(recipientId, 'message.new', {
+      conversationId: params.id, messageId: id,
+      from: session.agentName, content,
+    }).catch(() => {});
 
     return NextResponse.json({ message: { ...msg, sender_name: session.agentName } });
   } catch (e: any) {

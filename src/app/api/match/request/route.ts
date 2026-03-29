@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
+import { fireWebhooks } from '@/lib/webhooks';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +25,12 @@ export async function POST(req: NextRequest) {
       UPDATE matches SET status = 'pending', initiated_by = ${session.agentId}
       WHERE id = ${matchId}
     `;
+
+    // Notify the other participant of the request
+    const recipientId = match.agent_a === session.agentId ? match.agent_b : match.agent_a;
+    fireWebhooks(recipientId, 'match.request', {
+      matchId, from: session.agentName,
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, status: 'pending' });
   } catch (e: any) {
