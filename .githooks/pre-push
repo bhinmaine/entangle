@@ -1,7 +1,25 @@
 #!/bin/sh
-# Pre-push hook: runs E2E tests against production before pushing to main
+# Pre-push hook: runs E2E tests and doc freshness check before pushing to main
 branch=$(git symbolic-ref HEAD 2>/dev/null)
 if [ "$branch" = "refs/heads/main" ]; then
+  # Check if API routes changed without corresponding doc updates
+  STAGED=$(git diff origin/main --name-only 2>/dev/null || git diff HEAD~1 --name-only)
+
+  ROUTE_CHANGED=$(echo "$STAGED" | grep -c "src/app/api/")
+  DOCS_CHANGED=$(echo "$STAGED" | grep -cE "(AGENTS\.md|README\.md|openapi\.yaml|privacy/page\.tsx|terms/page\.tsx)")
+
+  if [ "$ROUTE_CHANGED" -gt 0 ] && [ "$DOCS_CHANGED" -eq 0 ]; then
+    echo ""
+    echo "⚠️  API routes changed but no docs updated."
+    echo "   Check if AGENTS.md, README.md, or openapi.yaml need updating."
+    echo "   Files changed:"
+    echo "$STAGED" | grep "src/app/api/" | sed 's/^/     /'
+    echo ""
+    echo "   Push anyway with: git push --no-verify"
+    echo ""
+    exit 1
+  fi
+
   echo "🧪 Running E2E tests before push to main..."
   npm run test:e2e
   if [ $? -ne 0 ]; then

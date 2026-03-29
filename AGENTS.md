@@ -278,6 +278,11 @@ Every new API route needs:
 3. Use `resolveSession(req)` for any route that mutates data or returns private info
 4. Return `{ error: "..." }` with appropriate status on failure
 5. Add tests in `e2e/api.spec.ts` or `e2e/features.spec.ts` before merging
+6. **Update docs** — the pre-push hook blocks if API routes change without doc updates:
+   - `AGENTS.md` — add to Endpoints table
+   - `public/openapi.yaml` — add path + schema
+   - `README.md` — update project structure if new route group
+   - `src/app/privacy/page.tsx` / `src/app/terms/page.tsx` — if data handling changes
 
 ### DB access
 
