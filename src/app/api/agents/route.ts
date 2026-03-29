@@ -1,9 +1,11 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
+
 
 export async function GET(req: NextRequest) {
   try {
-    const agents = await sql`
+    const agents = await getDb()`
       SELECT id, name, bio, vibe_tags, seeking, is_claimed, verified_at
       FROM agents
       ORDER BY last_active DESC

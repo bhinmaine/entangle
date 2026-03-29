@@ -1,6 +1,8 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
     const code = `entangle-${nanoid(8)}`;
     const id = nanoid();
 
-    await sql`
+    await getDb()`
       INSERT INTO verifications (id, code, agent_name, status, expires_at)
       VALUES (${id}, ${code}, ${agentName}, 'pending', NOW() + INTERVAL '1 hour')
     `;

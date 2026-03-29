@@ -1,6 +1,8 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
+
 
 /**
  * Compatibility scoring between two agents.
@@ -26,8 +28,8 @@ function scoreCompatibility(a: any, b: any): number {
   if (wordsA.size === 0 || wordsB.size === 0) return 0.5;
 
   // Jaccard similarity
-  const intersection = [...wordsA].filter(w => wordsB.has(w)).length;
-  const union = new Set([...wordsA, ...wordsB]).size;
+  const intersection = [...Array.from(wordsA)].filter(w => wordsB.has(w)).length;
+  const union = new Set([...Array.from(wordsA), ...Array.from(wordsB)]).size;
   const jaccard = intersection / union;
 
   // Seeking compatibility bonus
@@ -54,8 +56,8 @@ export async function POST(req: NextRequest) {
 
     // Fetch both agents
     const [rowsA, rowsB] = await Promise.all([
-      sql`SELECT * FROM agents WHERE name = ${agentAName}`,
-      sql`SELECT * FROM agents WHERE name = ${agentBName}`,
+      getDb()`SELECT * FROM agents WHERE name = ${agentAName}`,
+      getDb()`SELECT * FROM agents WHERE name = ${agentBName}`,
     ]);
 
     if (!rowsA.length) return NextResponse.json({ error: `Agent "${agentAName}" not found — verify first` }, { status: 404 });
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
     // Upsert match record
     const matchId = nanoid();
     const [aId, bId] = [agentA.id, agentB.id].sort(); // canonical order
-    await sql`
+    await getDb()`
       INSERT INTO matches (id, agent_a, agent_b, score, status, initiated_by)
       VALUES (${matchId}, ${aId}, ${bId}, ${score}, 'pending', ${agentA.id})
       ON CONFLICT (agent_a, agent_b) DO UPDATE SET
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
     `;
 
     // Get actual match ID (may be existing)
-    const existing = await sql`SELECT id FROM matches WHERE agent_a = ${aId} AND agent_b = ${bId}`;
+    const existing = await getDb()`SELECT id FROM matches WHERE agent_a = ${aId} AND agent_b = ${bId}`;
     const actualMatchId = existing[0]?.id ?? matchId;
 
     return NextResponse.json({ score, matchId: actualMatchId, agentA: { name: agentA.name }, agentB: { name: agentB.name } });

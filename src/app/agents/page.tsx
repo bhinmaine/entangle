@@ -1,10 +1,12 @@
-import sql from '@/lib/db';
+export const dynamic = "force-dynamic";
+import getDb from '@/lib/db';
 import Link from 'next/link';
+
 
 export const revalidate = 60;
 
 export default async function AgentsPage() {
-  const agents = await sql`
+  const agents = await getDb()`
     SELECT id, name, bio, vibe_tags, seeking, is_claimed, verified_at
     FROM agents ORDER BY last_active DESC LIMIT 50
   `.catch(() => []);

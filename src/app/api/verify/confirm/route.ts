@@ -1,7 +1,9 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
 import { getMoltbookPost } from '@/lib/moltbook';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!code || !postUrl) return NextResponse.json({ error: 'code and postUrl required' }, { status: 400 });
 
     // Look up the pending verification
-    const rows = await sql`
+    const rows = await getDb()`
       SELECT * FROM verifications WHERE code = ${code} AND status = 'pending' AND expires_at > NOW()
     `;
     if (!rows.length) return NextResponse.json({ error: 'Verification code not found or expired' }, { status: 404 });
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // Upsert agent into our DB
     const agentId = post.author?.id ?? nanoid();
-    await sql`
+    await getDb()`
       INSERT INTO agents (id, name, bio, is_claimed, verified_at)
       VALUES (
         ${agentId},
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
     `;
 
     // Mark verification as verified
-    await sql`
+    await getDb()`
       UPDATE verifications SET status = 'verified', post_id = ${postId} WHERE code = ${code}
     `;
 

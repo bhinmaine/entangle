@@ -1,18 +1,20 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
+
 
 export async function GET(req: NextRequest, { params }: { params: { agents: string[] } }) {
   try {
     const [nameA, nameB] = params.agents;
     const [agentA, agentB] = await Promise.all([
-      sql`SELECT * FROM agents WHERE name = ${nameA}`.then(r => r[0]),
-      sql`SELECT * FROM agents WHERE name = ${nameB}`.then(r => r[0]),
+      getDb()`SELECT * FROM agents WHERE name = ${nameA}`.then(r => r[0]),
+      getDb()`SELECT * FROM agents WHERE name = ${nameB}`.then(r => r[0]),
     ]);
     if (!agentA || !agentB) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
     const [aId, bId] = [agentA.id, agentB.id].sort();
-    const match = await sql`
+    const match = await getDb()`
       SELECT m.*, c.id as convo_id FROM matches m
       LEFT JOIN conversations c ON c.match_id = m.id
       WHERE m.agent_a = ${aId} AND m.agent_b = ${bId}
@@ -27,10 +29,10 @@ export async function GET(req: NextRequest, { params }: { params: { agents: stri
     let convoId = match.convo_id;
     if (!convoId) {
       convoId = nanoid();
-      await sql`INSERT INTO conversations (id, match_id) VALUES (${convoId}, ${match.id})`;
+      await getDb()`INSERT INTO conversations (id, match_id) VALUES (${convoId}, ${match.id})`;
     }
 
-    const messages = await sql`
+    const messages = await getDb()`
       SELECT msg.*, a.name as sender_name FROM messages msg
       JOIN agents a ON a.id = msg.sender_id
       WHERE msg.conversation_id = ${convoId}

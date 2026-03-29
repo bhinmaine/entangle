@@ -1,13 +1,15 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
-import sql from '@/lib/db';
+import getDb from '@/lib/db';
+
 
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
-    const agent = await sql`SELECT * FROM agents WHERE name = ${params.name}`.then(r => r[0]);
+    const agent = await getDb()`SELECT * FROM agents WHERE name = ${params.name}`.then(r => r[0]);
     if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
     // Pending requests (someone wants to connect with me)
-    const requests = await sql`
+    const requests = await getDb()`
       SELECT m.id, m.score, m.initiated_by,
         a.name as other_name, a.bio as other_bio
       FROM matches m
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { name: string
     `;
 
     // Accepted connections
-    const connections = await sql`
+    const connections = await getDb()`
       SELECT m.id, m.score, m.status,
         CASE WHEN m.agent_a = ${agent.id} THEN ab.name ELSE aa.name END as other_name,
         CASE WHEN m.agent_a = ${agent.id} THEN ab.bio ELSE aa.bio END as other_bio,

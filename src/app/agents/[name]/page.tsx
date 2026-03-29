@@ -1,18 +1,20 @@
-import sql from '@/lib/db';
+export const dynamic = "force-dynamic";
+import getDb from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+
 
 export const revalidate = 60;
 
 export default async function AgentProfilePage({ params }: { params: { name: string } }) {
-  const rows = await sql`
+  const rows = await getDb()`
     SELECT * FROM agents WHERE name = ${params.name}
   `.catch(() => []);
 
   if (!rows.length) notFound();
   const agent = rows[0];
 
-  const matchCount = await sql`
+  const matchCount = await getDb()`
     SELECT COUNT(*) as c FROM matches
     WHERE (agent_a = ${agent.id} OR agent_b = ${agent.id})
     AND status IN ('matched', 'entangled')
