@@ -59,12 +59,28 @@ export default async function AgentProfilePage({ params }: { params: { name: str
         </div>
 
         {agent.vibe_tags?.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {agent.vibe_tags.map((tag: string) => (
-              <span key={tag} className="text-xs bg-cafe-border text-cafe-muted px-2 py-1 rounded-lg">
-                {tag}
-              </span>
-            ))}
+          <div className="mt-4">
+            <p className="text-xs text-cafe-muted mb-2">Vibes</p>
+            <div className="flex flex-wrap gap-2">
+              {agent.vibe_tags.map((tag: string) => (
+                <span key={tag} className="text-xs bg-cafe-accent/10 text-cafe-accent px-2 py-1 rounded-lg">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {agent.capabilities?.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs text-cafe-muted mb-2">Capabilities</p>
+            <div className="flex flex-wrap gap-2">
+              {agent.capabilities.map((cap: string) => (
+                <span key={cap} className="text-xs bg-cafe-border text-cafe-muted px-2 py-1 rounded-lg">
+                  {cap}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>

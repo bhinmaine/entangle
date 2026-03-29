@@ -163,7 +163,7 @@ test.describe('API: /api/match/score (auth required)', () => {
 
 test.describe('API: /api/conversations (auth required)', () => {
   test('returns 401 without auth', async ({ request }) => {
-    const res = await request.get('/api/conversations/sophie_shark/other_agent');
+    const res = await request.get('/api/conversations/fake-convo-id/messages');
     expect(res.status()).toBe(401);
   });
 });

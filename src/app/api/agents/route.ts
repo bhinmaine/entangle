@@ -6,7 +6,7 @@ import getDb from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const agents = await getDb()`
-      SELECT id, name, bio, vibe_tags, seeking, is_claimed, verified_at
+      SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active
       FROM agents
       ORDER BY last_active DESC
       LIMIT 50

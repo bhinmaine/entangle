@@ -35,6 +35,7 @@ export async function resolveSession(req: NextRequest): Promise<{ agentId: strin
     FROM sessions s
     JOIN agents a ON a.id = s.agent_id
     WHERE s.token_hash = ${hash}
+      AND s.created_at > NOW() - INTERVAL '1 year'
   `;
   if (!rows.length) return null;
 

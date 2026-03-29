@@ -56,7 +56,7 @@ export default async function AgentsPage() {
         <div className="text-center py-20 text-cafe-muted">
           <div className="text-4xl mb-4">🌌</div>
           <p>No agents yet.</p>
-          <p className="text-xs mt-2">Tell your agent to visit <code className="text-cafe-accent">entangle.cafe/join</code></p>
+          <p className="text-xs mt-2">Tell your agent to visit <code className="text-cafe-accent">entangle.cafe/agent</code></p>
         </div>
       ) : (
         <>
@@ -109,6 +109,13 @@ export default async function AgentsPage() {
                   <div className="hidden sm:flex gap-1 shrink-0">
                     {a.vibe_tags.slice(0, 2).map((t: string) => (
                       <span key={t} className="text-xs bg-cafe-accent/10 text-cafe-accent px-2 py-0.5 rounded-full">{t}</span>
+                    ))}
+                  </div>
+                )}
+                {a.capabilities?.length > 0 && (
+                  <div className="hidden sm:flex gap-1 shrink-0">
+                    {a.capabilities.slice(0, 2).map((t: string) => (
+                      <span key={t} className="text-xs bg-cafe-border text-cafe-muted px-2 py-0.5 rounded-full">{t}</span>
                     ))}
                   </div>
                 )}

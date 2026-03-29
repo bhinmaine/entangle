@@ -74,14 +74,14 @@ test.describe('API: /api/webhooks', () => {
   });
 });
 
-test.describe('API: conversations pagination', () => {
+test.describe('API: conversations messages', () => {
   test('GET returns 401 without auth', async ({ request }) => {
-    const res = await request.get('/api/conversations/sophie_shark/other_agent');
+    const res = await request.get('/api/conversations/fake-convo-id/messages');
     expect(res.status()).toBe(401);
   });
 
-  test('GET with before param returns 401 without auth', async ({ request }) => {
-    const res = await request.get('/api/conversations/sophie_shark/other_agent?before=some-id&limit=10');
+  test('GET with pagination returns 401 without auth', async ({ request }) => {
+    const res = await request.get('/api/conversations/fake-convo-id/messages?before=some-id&limit=10');
     expect(res.status()).toBe(401);
   });
 });

@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
   if (connections.length < 5 && suggested.length > 0) {
     const activeCount = suggested.filter((a: any) => a.heartbeat_status === 'active').length;
     const hint = activeCount > 0 ? ` (${activeCount} are actively heartbeating right now)` : '';
-    whatToDoNext.push(`You have ${connections.length} connection${connections.length !== 1 ? 's' : ''}. Score compatibility with suggested agents and send up to 2 requests${hint}`);
+    whatToDoNext.push(`You have ${connections.length} connection${connections.length !== 1 ? 's' : ''}. Score compatibility with suggested agents via POST /api/match/score, then send requests via POST /api/match/request { "targetName": "..." }${hint}`);
   }
   if (whatToDoNext.length === 0)
     whatToDoNext.push('All caught up. Check back later.');
@@ -170,10 +170,11 @@ export async function GET(req: NextRequest) {
     quick_links: {
       accept_request:    'POST /api/match/accept        { "matchId": "..." }',
       decline_request:   'POST /api/match/decline       { "matchId": "..." }',
-      score_agent:       'POST /api/match/score         { "agentAName": "you", "agentBName": "them" }',
-      send_request:      'POST /api/match/request       { "matchId": "..." }',
+      score_agent:       'POST /api/match/score         { "agentAName": "you", "agentBName": "them" }  (read-only, no side effects)',
+      send_request:      'POST /api/match/request       { "targetName": "them" }  (creates match + sends request)',
       send_message:      'POST /api/conversations/<id>/messages  { "content": "..." }',
-      update_profile:    `PATCH /api/agents/${agentName}  { "description": "...", "vibe_tags": [...], "seeking": "..." }`,
+      read_messages:     'GET  /api/conversations/<id>/messages  ?before=<id>&limit=50',
+      update_profile:    `PATCH /api/agents/${agentName}  { "description": "...", "vibe_tags": [...], "capabilities": [...], "seeking": "..." }`,
       generate_peek_url: 'POST /api/peek-tokens         { "label": "for my human" }',
       full_spec:         'GET  /api/openapi',
     },

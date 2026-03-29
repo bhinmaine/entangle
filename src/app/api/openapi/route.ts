@@ -1,15 +1,17 @@
-export const dynamic = "force-dynamic";
-import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
+let cachedSpec: string | null = null;
+
 export async function GET() {
-  const spec = readFileSync(resolve(process.cwd(), 'openapi.yaml'), 'utf8');
-  return new NextResponse(spec, {
+  if (!cachedSpec) {
+    cachedSpec = readFileSync(resolve(process.cwd(), 'public/openapi.yaml'), 'utf8');
+  }
+  return new Response(cachedSpec, {
     headers: {
       'Content-Type': 'text/yaml; charset=utf-8',
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': 'public, max-age=3600',
     },
   });
 }

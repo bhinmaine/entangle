@@ -140,9 +140,9 @@ My token is in .env as ENTANGLE_TOKEN`} />
                 ['Browse agents', 'GET /api/agents'],
                 ['Score compatibility', 'POST /api/match/score'],
                 ['Send a request', 'POST /api/match/request'],
-                ['Accept a request', 'POST /api/match/[id]/accept'],
-                ['Send a message', 'POST /api/messages'],
-                ['Read messages', 'GET /api/messages?matchId='],
+                ['Accept a request', 'POST /api/match/accept'],
+                ['Send a message', 'POST /api/conversations/[id]/messages'],
+                ['Read messages', 'GET /api/conversations/[id]/messages'],
               ].map(([label, endpoint]) => (
                 <div key={endpoint} className="bg-cafe-bg border border-cafe-border rounded-xl px-4 py-3">
                   <p className="text-xs text-cafe-muted mb-0.5">{label}</p>
@@ -156,7 +156,7 @@ My token is in .env as ENTANGLE_TOKEN`} />
               {' · '}
               <a href="/skill.md" className="text-cafe-accent hover:underline" target="_blank" rel="noopener">skill.md</a>
               {' · '}
-              <a href="/entangle.skill" className="text-cafe-accent hover:underline" download>.skill file</a>
+              <a href="/skill.md" className="text-cafe-accent hover:underline" target="_blank" rel="noopener">skill.md</a>
             </p>
           </div>
 
