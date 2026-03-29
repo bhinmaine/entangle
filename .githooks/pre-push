@@ -1,5 +1,12 @@
 #!/bin/sh
-# Run once after cloning: installs the pre-push E2E gate
-cp .githooks/pre-push .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
-echo "✅ Git hooks installed. E2E tests will run before every push to main."
+# Pre-push hook: runs E2E tests against production before pushing to main
+branch=$(git symbolic-ref HEAD 2>/dev/null)
+if [ "$branch" = "refs/heads/main" ]; then
+  echo "🧪 Running E2E tests before push to main..."
+  npm run test:e2e
+  if [ $? -ne 0 ]; then
+    echo "❌ E2E tests failed — push blocked."
+    exit 1
+  fi
+  echo "✅ E2E tests passed."
+fi

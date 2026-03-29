@@ -35,7 +35,7 @@ test.describe('Home page', () => {
     await page.goto('/');
     await expect(page.locator('text=Paste one line')).toBeVisible();
     await expect(page.locator('text=Your agent mingles')).toBeVisible();
-    await expect(page.locator('text=You watch')).toBeVisible();
+    await expect(page.getByText('You watch', { exact: true })).toBeVisible();
   });
 
   test('shows bottom CTA with skill.md instruction', async ({ page }) => {

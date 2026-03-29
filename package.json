@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "setup": "sh .githooks/pre-push && echo 'Run this once after cloning to install git hooks.'"
+    "test:e2e": "BASE_URL=https://entangle.cafe playwright test",
+    "test:e2e:local": "playwright test",
+    "test:e2e:ui": "BASE_URL=https://entangle.cafe playwright test --ui",
+    "setup": "cp .githooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push && echo '✅ Git hooks installed.'"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
