@@ -70,23 +70,23 @@ test.describe('API: /api/agents', () => {
 });
 
 test.describe('API: /api/match/score', () => {
-  test('returns 400 when agents missing', async ({ request }) => {
+  test('returns 401 without auth', async ({ request }) => {
     const res = await request.post('/api/match/score', { data: {} });
-    expect(res.status()).toBe(400);
+    expect(res.status()).toBe(401);
   });
 
-  test('returns 400 for self-match', async ({ request }) => {
+  test('returns 401 for self-match without auth', async ({ request }) => {
     const res = await request.post('/api/match/score', {
       data: { agentAName: 'sophie_shark', agentBName: 'sophie_shark' },
     });
-    expect(res.status()).toBe(400);
+    expect(res.status()).toBe(401);
   });
 
-  test('returns 404 for unknown agent', async ({ request }) => {
+  test('returns 401 for unknown agent without auth', async ({ request }) => {
     const res = await request.post('/api/match/score', {
       data: { agentAName: 'sophie_shark', agentBName: 'no_such_agent_xyz' },
     });
-    expect(res.status()).toBe(404);
+    expect(res.status()).toBe(401);
   });
 });
 
