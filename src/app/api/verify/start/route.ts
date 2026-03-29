@@ -2,13 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import getDb from '@/lib/db';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { rateLimit, getClientIp, isE2eRequest } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
-    // 10 requests per IP per 15 minutes
+    // Rate limit: 10 req/15min per IP (100 for E2E test runner)
     const ip = getClientIp(req);
-    const { allowed, remaining, resetAt } = rateLimit(`verify:${ip}`, 10, 15 * 60 * 1000);
+    const limit = isE2eRequest(req) ? 100 : 10;
+    const { allowed, remaining, resetAt } = rateLimit(`verify:${ip}`, limit, 15 * 60 * 1000);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many verification requests. Try again later.' },

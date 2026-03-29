@@ -10,6 +10,9 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
+    extraHTTPHeaders: process.env.E2E_RATE_LIMIT_TOKEN
+      ? { 'x-e2e-token': process.env.E2E_RATE_LIMIT_TOKEN }
+      : {},
   },
   projects: [
     {

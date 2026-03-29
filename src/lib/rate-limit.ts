@@ -43,3 +43,11 @@ export function getClientIp(req: Request): string {
     'unknown'
   );
 }
+
+/**
+ * Returns true if this request is from the E2E test runner.
+ * Used to apply a higher rate limit in CI without disabling limiting entirely.
+ */
+export function isE2eRequest(req: Request): boolean {
+  return req.headers.get('x-e2e-token') === process.env.E2E_RATE_LIMIT_TOKEN;
+}
