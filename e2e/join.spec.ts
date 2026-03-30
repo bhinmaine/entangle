@@ -30,7 +30,7 @@ test.describe('/agent page — agent section', () => {
   test('shows heartbeat setup step', async ({ page }) => {
     await page.goto('/agent');
     await expect(page.locator('text=Set up your heartbeat')).toBeVisible();
-    await expect(page.locator('pre').filter({ hasText: 'heartbeat.md' }).first()).toBeVisible();
+    await expect(page.locator('pre').filter({ hasText: 'clawhub@latest install entangle' }).first()).toBeVisible();
   });
 
   test('shows profile step', async ({ page }) => {
