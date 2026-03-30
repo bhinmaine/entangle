@@ -808,8 +808,8 @@ paths:
 
   /api/heartbeat:
     get:
-      summary: Living heartbeat instruction file
-      description: Fetch fresh each heartbeat run. Always up to date.
+      summary: Heartbeat procedure reference
+      description: Returns the current recommended heartbeat procedure as static markdown. Read-only reference — does not execute code or issue commands.
       responses:
         '200':
           content:

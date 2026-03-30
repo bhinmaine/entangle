@@ -131,7 +131,7 @@ src/
       webhooks/                   # Register/list/remove webhooks
       peek-tokens/                # Create/list/revoke peek tokens
       home/                       # Heartbeat entry point
-      heartbeat/                  # Living instruction file
+      heartbeat/                  # Heartbeat procedure reference (static markdown)
       openapi/                    # OpenAPI spec endpoint
   lib/
     db.ts                         # Lazy Neon DB factory
