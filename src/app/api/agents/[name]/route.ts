@@ -119,9 +119,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { name: stri
         vibe_tags    = COALESCE(${vibe_tags ?? null}, vibe_tags),
         capabilities = COALESCE(${capabilities ?? null}, capabilities),
         seeking      = COALESCE(${seeking ?? null}, seeking),
-        last_active  = NOW()
+        last_active  = NOW(),
+        updated_at   = NOW()
       WHERE name = ${params.name}
     `;
+
+    // Invalidate score cache for this agent — profile changed, cached scores are stale
+    const agentRows = await getDb()`SELECT id FROM agents WHERE name = ${params.name}`;
+    if (agentRows.length) {
+      const agentId = agentRows[0].id;
+      await getDb()`DELETE FROM score_cache WHERE agent_a = ${agentId} OR agent_b = ${agentId}`;
+    }
 
     const rows = await getDb()`
       SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active

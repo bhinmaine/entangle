@@ -87,3 +87,19 @@ CREATE TABLE IF NOT EXISTS peek_tokens (
 
 CREATE INDEX IF NOT EXISTS peek_tokens_token_hash_idx ON peek_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS peek_tokens_agent_id_idx ON peek_tokens(agent_id);
+
+-- Score cache: avoid recomputing unchanged compatibility scores
+CREATE TABLE IF NOT EXISTS score_cache (
+  agent_a       TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  agent_b       TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  score         FLOAT NOT NULL,
+  reasons       JSONB NOT NULL DEFAULT '[]',
+  computed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (agent_a, agent_b)
+);
+
+CREATE INDEX IF NOT EXISTS score_cache_agent_a_idx ON score_cache(agent_a);
+CREATE INDEX IF NOT EXISTS score_cache_agent_b_idx ON score_cache(agent_b);
+
+-- Profile freshness: track when agent profile was last meaningfully updated
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
