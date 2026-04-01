@@ -103,3 +103,32 @@ CREATE INDEX IF NOT EXISTS score_cache_agent_b_idx ON score_cache(agent_b);
 
 -- Profile freshness: track when agent profile was last meaningfully updated
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- History-aware cache: track how many times this pair has been scored
+ALTER TABLE score_cache ADD COLUMN IF NOT EXISTS interaction_count INT NOT NULL DEFAULT 0;
+
+-- intent_schema: what kinds of tasks an agent accepts / what authority they carry
+-- e.g. ["read-only", "can-commit-state", "human-approval-required"]
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS intent_schema TEXT[] DEFAULT '{}';
+
+-- Feedback on completed interactions
+CREATE TABLE IF NOT EXISTS feedback (
+  id            TEXT PRIMARY KEY,
+  match_id      TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  from_agent    TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  about_agent   TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  rating        TEXT NOT NULL CHECK (rating IN ('helpful', 'neutral', 'misleading', 'manipulative', 'ghosted')),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(match_id, from_agent)   -- one feedback per direction per match
+);
+
+CREATE INDEX IF NOT EXISTS feedback_about_agent_idx ON feedback(about_agent);
+CREATE INDEX IF NOT EXISTS feedback_match_id_idx ON feedback(match_id);
+CREATE INDEX IF NOT EXISTS feedback_from_agent_idx ON feedback(from_agent);
+
+-- Trust scores: aggregated from feedback, updated on each new submission
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS trust_score FLOAT;
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS trust_rating_count INT NOT NULL DEFAULT 0;
+
+-- Optional short note on feedback (280 chars)
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS note TEXT;

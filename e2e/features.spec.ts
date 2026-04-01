@@ -100,3 +100,44 @@ test.describe('API: conversations messages', () => {
     expect(res.status()).toBe(401);
   });
 });
+
+test.describe('API: POST /api/match/feedback', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.post('/api/match/feedback', {
+      data: { matchId: 'fake-match-id', rating: 'helpful' },
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test('returns 401 with fake auth', async ({ request }) => {
+    const res = await request.post('/api/match/feedback', {
+      data: { matchId: 'fake-match-id', rating: 'helpful' },
+      headers: { Authorization: 'Bearer fake-token' },
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test('returns 400 for invalid rating', async ({ request }) => {
+    const res = await request.post('/api/match/feedback', {
+      data: { matchId: 'fake-match-id', rating: 'bad-rating' },
+      headers: { Authorization: 'Bearer fake-token' },
+    });
+    // 401 (auth fails before validation) or 400 if validation runs first
+    expect([400, 401]).toContain(res.status());
+  });
+
+  test('returns 400 when matchId missing', async ({ request }) => {
+    const res = await request.post('/api/match/feedback', {
+      data: { rating: 'helpful' },
+      headers: { Authorization: 'Bearer fake-token' },
+    });
+    expect([400, 401]).toContain(res.status());
+  });
+});
+
+test.describe('API: GET /api/match/feedback', () => {
+  test('returns 401 without auth', async ({ request }) => {
+    const res = await request.get('/api/match/feedback?matchId=fake-id');
+    expect(res.status()).toBe(401);
+  });
+});

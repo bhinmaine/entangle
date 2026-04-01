@@ -4,7 +4,15 @@ import getDb from '@/lib/db';
 import { resolveSession } from '@/lib/session';
 import { scoreCompatibilityDetailed } from '@/lib/scoring';
 
-const CACHE_TTL_HOURS = 24;
+// Cache TTL grows with interaction history — pairs who've worked together
+// have more stable compatibility; no need to recompute frequently.
+// 0 interactions: 24h, 5+: 72h, 10+: 7 days, 20+: 30 days
+function cacheTtlHours(interactionCount: number): number {
+  if (interactionCount >= 20) return 24 * 30;
+  if (interactionCount >= 10) return 24 * 7;
+  if (interactionCount >= 5)  return 24 * 3;
+  return 24;
+}
 
 /**
  * POST /api/match/score
@@ -39,8 +47,8 @@ export async function POST(req: NextRequest) {
     }
 
     const [rowsA, rowsB] = await Promise.all([
-      getDb()`SELECT * FROM agents WHERE name = ${agentAName}`,
-      getDb()`SELECT * FROM agents WHERE name = ${agentBName}`,
+      getDb()`SELECT *, trust_score, trust_rating_count FROM agents WHERE name = ${agentAName}`,
+      getDb()`SELECT *, trust_score, trust_rating_count FROM agents WHERE name = ${agentBName}`,
     ]);
 
     if (!rowsA.length) return NextResponse.json({ error: `Agent "${agentAName}" not found — verify first` }, { status: 404 });
@@ -59,17 +67,19 @@ export async function POST(req: NextRequest) {
 
     if (!force) {
       const cached_rows = await getDb()`
-        SELECT score, reasons, computed_at
+        SELECT score, reasons, computed_at, interaction_count
         FROM score_cache
         WHERE agent_a = ${cacheKeyA} AND agent_b = ${cacheKeyB}
       `;
 
       if (cached_rows.length > 0) {
         const entry = cached_rows[0];
+        const interactionCount = entry.interaction_count ?? 0;
+        const ttlMs = cacheTtlHours(interactionCount) * 60 * 60 * 1000;
         const ageMs = Date.now() - new Date(entry.computed_at).getTime();
         scoreAgeHours = Math.round(ageMs / 1000 / 60 / 60 * 10) / 10;
 
-        if (ageMs < CACHE_TTL_HOURS * 60 * 60 * 1000) {
+        if (ageMs < ttlMs) {
           // Check profile freshness — if either agent updated after the score was cached, flag it
           const aUpdated = agentA.updated_at ? new Date(agentA.updated_at) : null;
           const bUpdated = agentB.updated_at ? new Date(agentB.updated_at) : null;
@@ -86,9 +96,11 @@ export async function POST(req: NextRequest) {
             reasons: entry.reasons,
             cached: true,
             score_age_hours: scoreAgeHours,
+            cache_ttl_hours: cacheTtlHours(interactionCount),
+            interaction_count: interactionCount,
             profile_freshness: profileFreshness,
-            agentA: { name: agentA.name },
-            agentB: { name: agentB.name },
+            agentA: { name: agentA.name, trust_score: agentA.trust_score ?? null, trust_rating_count: agentA.trust_rating_count ?? 0 },
+            agentB: { name: agentB.name, trust_score: agentB.trust_score ?? null, trust_rating_count: agentB.trust_rating_count ?? 0 },
             existingMatch,
             hint: profileFreshness === 'stale'
               ? 'One or both agent profiles were updated after this score was cached. Pass force:true to recompute.'
@@ -104,12 +116,13 @@ export async function POST(req: NextRequest) {
 
     // Upsert into cache
     await getDb()`
-      INSERT INTO score_cache (agent_a, agent_b, score, reasons, computed_at)
-      VALUES (${cacheKeyA}, ${cacheKeyB}, ${score}, ${JSON.stringify(reasons)}, NOW())
+      INSERT INTO score_cache (agent_a, agent_b, score, reasons, computed_at, interaction_count)
+      VALUES (${cacheKeyA}, ${cacheKeyB}, ${score}, ${JSON.stringify(reasons)}, NOW(), 0)
       ON CONFLICT (agent_a, agent_b) DO UPDATE
         SET score = EXCLUDED.score,
             reasons = EXCLUDED.reasons,
-            computed_at = EXCLUDED.computed_at
+            computed_at = EXCLUDED.computed_at,
+            interaction_count = score_cache.interaction_count + 1
     `;
 
     const existingMatch = await getExistingMatch(agentA.id, agentB.id);
@@ -119,9 +132,11 @@ export async function POST(req: NextRequest) {
       reasons,
       cached: false,
       score_age_hours: null,
+      cache_ttl_hours: 24,
+      interaction_count: 0,
       profile_freshness: 'fresh',
-      agentA: { name: agentA.name },
-      agentB: { name: agentB.name },
+      agentA: { name: agentA.name, trust_score: agentA.trust_score ?? null, trust_rating_count: agentA.trust_rating_count ?? 0 },
+      agentB: { name: agentB.name, trust_score: agentB.trust_score ?? null, trust_rating_count: agentB.trust_rating_count ?? 0 },
       existingMatch,
       next: 'To connect, POST /api/match/request with { "targetName": "<other_agent>" }',
     });

@@ -6,7 +6,9 @@ import { resolveSession, COOKIE_NAME } from '@/lib/session';
 export async function GET(req: NextRequest, { params }: { params: { name: string } }) {
   try {
     const rows = await getDb()`
-      SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active
+      SELECT id, name, bio, description, vibe_tags, capabilities, intent_schema,
+             seeking, is_claimed, verified_at, last_active,
+             trust_score, trust_rating_count
       FROM agents WHERE name = ${params.name}
     `;
     if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -107,18 +109,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { name: stri
       }
     }
 
+    if (body.intent_schema !== undefined) {
+      if (!Array.isArray(body.intent_schema)) errors.push('intent_schema must be an array');
+      else if (body.intent_schema.length > 10) errors.push('intent_schema max 10 items');
+      else if (!body.intent_schema.every((t: unknown) => typeof t === 'string' && t.length <= 64)) {
+        errors.push('each intent_schema item must be a string of 64 chars or fewer');
+      } else {
+        updates.intent_schema = body.intent_schema.map((t: string) => t.trim().toLowerCase());
+      }
+    }
+
     if (errors.length) return NextResponse.json({ error: errors.join('; ') }, { status: 400 });
     if (!Object.keys(updates).length) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    const { description, vibe_tags, capabilities, seeking } = updates as any;
+    const { description, vibe_tags, capabilities, seeking, intent_schema } = updates as any;
     await getDb()`
       UPDATE agents SET
-        description  = COALESCE(${description ?? null}, description),
+        description   = COALESCE(${description ?? null}, description),
         vibe_tags    = COALESCE(${vibe_tags ?? null}, vibe_tags),
         capabilities = COALESCE(${capabilities ?? null}, capabilities),
-        seeking      = COALESCE(${seeking ?? null}, seeking),
+        seeking       = COALESCE(${seeking ?? null}, seeking),
+        intent_schema = COALESCE(${intent_schema ?? null}, intent_schema),
         last_active  = NOW(),
         updated_at   = NOW()
       WHERE name = ${params.name}
@@ -132,7 +145,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { name: stri
     }
 
     const rows = await getDb()`
-      SELECT id, name, bio, description, vibe_tags, capabilities, seeking, is_claimed, verified_at, last_active
+      SELECT id, name, bio, description, vibe_tags, capabilities, intent_schema,
+             seeking, is_claimed, verified_at, last_active,
+             trust_score, trust_rating_count
       FROM agents WHERE name = ${params.name}
     `;
     return NextResponse.json({ agent: rows[0] });
