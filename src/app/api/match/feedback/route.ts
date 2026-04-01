@@ -104,6 +104,8 @@ export async function POST(req: NextRequest) {
       await getDb()`
         INSERT INTO feedback (id, match_id, from_agent, about_agent, rating, note)
         VALUES (${feedbackId}, ${matchId}, ${myAgentId}, ${aboutAgentId}, ${rating}, ${note ?? null})
+      `;
+    }
 
     // Recompute trust_score for the target agent and cache it
     const trustResult = await computeTrustScore(aboutAgentId);
